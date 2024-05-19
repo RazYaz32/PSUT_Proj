@@ -16,6 +16,18 @@ std::unordered_map<int, std::string> userDatabase = {
     {9, "complexPassword"},
 };
 
+std::unordered_map<int, bool> accountStatus = {
+    {1, true}, 
+    {2, false}, 
+    {3, true},
+    {4, true},
+    {5, true},
+    {6, true},
+    {7, true},
+    {8, false},
+    {9, true}
+};
+
 //Mock multi-factor authentication database
 std::unordered_map<int, bool> mfaDatabase = {
     {1, true},

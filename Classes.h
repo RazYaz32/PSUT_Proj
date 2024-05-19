@@ -6,7 +6,7 @@
 #include <vector>
 #include "Mock_Database.h"
 
-std::vector<std::string> paymentMethods = { "Credit Card", "Debit Card", "PayPal", "Bank Transfer" };
+std::vector<std::string> paymentMethods = { "Direct", "Gift Cards", "Stock"};
 
 class Date {
 public:
@@ -23,60 +23,90 @@ public:
 
     Interface(Date date) : date(date) {}
 
-    virtual void authenticate(int userID) = 0;
+    virtual bool authenticate(int userID) = 0;
     virtual void transferPayments(int userID, int amount) = 0;
     virtual void handleStandards(int userID) = 0;
 };
 
 class UserAuthentication : public Interface {
-private:
-    std::string password;
-    Date date;
 public:
-    
+    std::string password;
 
     UserAuthentication(Date date, std::string password) : Interface(date), password(password) {}
 
-    void auth(int userID, std::string password) {
+    bool verifyCredentials(int userID, std::string password) {
         if (userDatabase.find(userID) != userDatabase.end()) {
             if (userDatabase[userID] == password) {
-                std::cout << "User " << userID << " authenticated successfully." << std::endl;
+                return true;
             }
             else {
                 std::cout << "Authentication failed: Incorrect password." << std::endl;
+                return false;
             }
         }
         else {
             std::cout << "Authentication failed: User ID not found." << std::endl;
+            return false;
         }
     }
 
-    void multiFactorAuth(int userID) {
-        if (mfaDatabase.find(userID) != mfaDatabase.end()) {
-            if (mfaDatabase[userID]) {
-                std::cout << "User " << userID << " passed multi-factor authentication." << std::endl;
+    bool checkAccountStatus(int userID) {
+        if (accountStatus.find(userID) != accountStatus.end()) {
+            if (accountStatus[userID]) {
+                return true;
             }
             else {
-                std::cout << "User " << userID << " did not set up multi-factor authentication." << std::endl;
+                std::cout << "Authentication failed: Account is inactive." << std::endl;
+                return false;
             }
         }
         else {
-            std::cout << "Multi-factor authentication failed: User ID not found." << std::endl;
+            std::cout << "Authentication failed: User ID not found in account status database." << std::endl;
+            return false;
         }
     }
 
-    void authenticate(int userID) override {
-        std::cout << "Authenticating user " << userID << "..." << std::endl;
-        auth(userID, password);
-        multiFactorAuth(userID);
+    bool multiFactorAuth(int userID) {
+        if (mfaDatabase.find(userID) != mfaDatabase.end()) {
+            if (mfaDatabase[userID]) {
+                // Simulate multi-factor authentication
+                std::cout << "Multi-factor authentication passed for user " << userID << "." << std::endl;
+                return true;
+            }
+            else {
+                std::cout << "Multi-factor authentication not set up for user " << userID << "." << std::endl;
+                return false;
+            }
+        }
+        else {
+            std::cout << "Multi-factor authentication failed: User ID not found in MFA database." << std::endl;
+            return false;
+        }
+    }
+
+    bool authenticate(int userID) override {
+        std::string password;
+        std::cout << "Enter password for user " << userID << ": ";
+        std::cin >> password;
+
+        if (verifyCredentials(userID, password) && checkAccountStatus(userID) && multiFactorAuth(userID)) {
+            std::cout << "User " << userID << " authenticated successfully." << std::endl;
+            return true;
+        }
+        else {
+            std::cout << "Authentication failed for user " << userID << "." << std::endl;
+            return false;
+        }
     }
 
     void transferPayments(int userID, int amount) override {
-        std::cout << "Transferring amount " << amount << " for user " << userID << std::endl;
+        std::cout << "Transferring amount $" << amount << " for user " << userID << std::endl;
+        // Transfer payment logic here
     }
 
     void handleStandards(int userID) override {
         std::cout << "Handling standards for user " << userID << std::endl;
+        // Handle standards logic here
     }
 };
 
@@ -88,10 +118,10 @@ public:
 
     PaymentInitiation(Date date, int transactionID) : Interface(date), transactionID(transactionID) {}
 
-    void initiatePayment(int userID, int amount) {
+    void initiatePayment(int userID_seller, double amount) {
         //TODO: Further Payment Initiation Logic
         transactionDatabase[transactionID] = amount;
-        std::cout << "Payment initiated for user " << userID << " with transaction ID " << transactionID << " and amount " << amount << "." << std::endl;
+        std::cout << "Payment initiated for user " << userID_seller << " with transaction ID " << transactionID << " and amount " << amount << "." << std::endl;
     }
 
     void choosePaymentMethod() {
@@ -113,21 +143,23 @@ public:
     }
 
     void enterDetails() {
-        std::cout << "Enter payment details for " << chosenPaymentMethod << ": ";
+        std::cout << "Enter payment details for " << ": ";
         std::cin.ignore();  //Clear stdin buffer
         std::getline(std::cin, paymentDetails);
         std::cout << "Payment details entered: " << paymentDetails << "." << std::endl;
     }
 
-    void authenticate(int userID) override {
+    bool authenticate(int userID) override {
         std::string password;
         std::cout << "Enter password for user " << userID << ": ";
         std::cin >> password;
         if (userDatabase.find(userID) != userDatabase.end() && userDatabase[userID] == password) {
             std::cout << "User " << userID << " authenticated successfully." << std::endl;
+            return true;
         }
         else {
             std::cout << "Authentication failed for user " << userID << "." << std::endl;
+            return false;
         }
     }
 
@@ -142,7 +174,7 @@ public:
     }
 };
 
-// Class: ConfirmationReceipt (inherits Interface)
+//ConfirmationReceipt (inherits Interface)
 class ConfirmationReceipt : public Interface {
 public:
     ConfirmationReceipt(Date date) : Interface(date) {}
@@ -157,9 +189,15 @@ public:
         }
     }
 
-    // Implementing pure virtual functions from Interface
-    void authenticate(int userID) override {
-        std::cout << "Authenticating user " << userID << " for receipt provision..." << std::endl;
+    bool authenticate(int userID) override {
+        if (userDatabase.find(userID) != userDatabase.end()) {
+            std::cout << "Authenticating user " << userID << " for receipt provision..." << std::endl;
+            return true;
+        }
+        else {
+            std::cout << "Authentication failed: user " << userID << " does not exist!";
+            return false;
+        }
         // Authentication logic here
     }
 
@@ -174,7 +212,6 @@ public:
     }
 };
 
-// Class: PaymentProcessing
 class PaymentProcessing {
 public:
     int userID_buyer;
@@ -186,18 +223,18 @@ public:
 
     void processPayment() {
         UserAuthentication userAuth(date, "password123");
-        userAuth.authenticate(userID_buyer);
+        if (userAuth.authenticate(userID_buyer)) {
 
-        PaymentInitiation paymentInit(date, 1001);
-        paymentInit.authenticate(userID_buyer);
-        paymentInit.initiatePayment(userID_buyer, amount);
-        paymentInit.choosePaymentMethod();
-        paymentInit.enterDetails();
-        paymentInit.transferPayments(userID_seller, amount);
-        paymentInit.handleStandards(userID_buyer);
+            PaymentInitiation paymentInit(date, 1001);
+            paymentInit.initiatePayment(userID_buyer, amount);
+            paymentInit.choosePaymentMethod();
+            paymentInit.enterDetails();
+            paymentInit.transferPayments(userID_seller, amount);
+            paymentInit.handleStandards(userID_buyer);
 
-        ConfirmationReceipt receipt(date);
-        receipt.provideReceipts(1001);
+            ConfirmationReceipt receipt(date);
+            receipt.provideReceipts(1001);
+        }
     }
 
     void authorizePayment(int userID) {

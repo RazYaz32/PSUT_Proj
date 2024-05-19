@@ -61,14 +61,13 @@ int main()
     ConfirmationReceipt receipt(date3);
     receipt.provideReceipts(1001);  //Provide receipt for transaction ID 1001
 
-    /
+    */
     //Unit tests for classes.
 
     Date date(2024, 5, 14);
-    PaymentProcessing paymentProcessing(1, 500, date);
+    PaymentProcessing paymentProcessing(1, 2, 500, date);
     paymentProcessing.processPayment();
-    */
-    srand(time(NULL));
-    std::cout << (rand()%9) + 1 << " | " << (rand() % 9) + 1 << std::endl;
+
+
     return 0;
 }
